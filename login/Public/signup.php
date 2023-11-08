@@ -21,15 +21,23 @@
 
 
         if ($Error == "") {
-            $query = "INSERT INTO users (url_address, user_name, password, email, PermissionsLvl) VALUES (:url_address, :user_name, :password, :email, :PermissionsLvl)";
+            
+            //create an initialization vector for AES encryption
+            $iv = openssl_random_pseudo_bytes(16);
+            $encryptionKey = require 'retrieve.php';
+
+            $query = "INSERT INTO users (url_address, user_name, password, email, PermissionsLvl) VALUES (:url_address, :user_name, :password, :email, :PermissionsLvl, :iv)";
     
             $stmt = $connection->prepare($query);
             
             $stmt->bindParam(':url_address', $url_address);
-            $stmt->bindParam(':user_name', $user_name);
-            $stmt->bindParam(':password', $password);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':PermissionsLvl', $PermissionsLvl);
+            $stmt->bindParam(':user_name', encrypt($user_name,$encryptionKey,$iv));
+            $stmt->bindParam(':password', encrypt($password,$encryptionKey,$iv));
+            $stmt->bindParam(':email', encrypt($email,$encryptionKey,$iv));
+            $stmt->bindParam(':PermissionsLvl', encrypt($PermissionsLvl,$encryptionKey,$iv));
+            //iv must also be saved into database
+            $stmt->bindParam(':iv', $iv);
+
             echo $query;
             $stmt->execute();
     
